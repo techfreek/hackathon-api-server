@@ -22,11 +22,11 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
 app.use('/', express.static(path.join(__dirname, 'build')));
-app.use('/hosted_images', express.static(path.join('/var', 'www', 'hosted-images')));
-app.get('/', express.static(path.join(__dirname, 'build', 'index.html')));
-app.get("/teams", getTeamInfo);
-app.get("/spots", getRemainingSpots);
-app.get("/imgs/:year?", getImageNames);
+//app.use('/hosted_images', express.static(path.join('/var', 'www', 'hosted-images')));
+//app.get('/', express.static(path.join(__dirname, 'build', 'index.html')));
+app.get("/api/teams", getTeamInfo);
+app.get("/api/spots", getRemainingSpots);
+app.get("/api/imgs/:year?", getImageNames);
 
 var server = http.createServer(app);
 
