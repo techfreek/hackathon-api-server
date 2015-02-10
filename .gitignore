@@ -1,2 +1,5 @@
 # Configuration file with api keys
 config.json
+
+# Node stuff
+node_modules
