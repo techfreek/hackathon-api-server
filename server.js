@@ -1,34 +1,67 @@
 #!/usr/bin/env node
 var path = require('path'),
-  http = require('http'),
-  express = require('express'),
-  imgSize = require('image-size'),
-  bodyParser = require('body-parser'),
-  config = require(path.join(__dirname, 'config.json')),
-  compression = require('compression'),
-  app = express(),
-  request = require('request'),
-  async = require('async'),
-  _teams = [],
-  approvedTeams = [],
-  fs = require('fs'),
-  afterHackathon = new Date(2015, 2, 8),
-  glob = require('glob');
+    http = require('http'),
+    express = require('express'),
+    imgSize = require('image-size'),
+    bodyParser = require('body-parser'),
+    compression = require('compression'),
+    app = express(),
+    request = require('request'),
+    async = require('async'),
+    _teams = [],
+    approvedTeams = [],
+    fs = require('fs'),
+    afterHackathon = new Date(2015, 2, 8),
+    glob = require('glob');
+
+/**
+ * The server configuration should be in the format:
+ * {
+ *    eventbrite: {
+ *      eventId: "string-with-id",
+ *      oathToken: "super-not-so-secret-token"
+ *    },
+ *    imagesDir: "directory-where-the-hosted-images-are"
+ * }
+ */
+var config;
+exports.startServer = function(serverConfig) {
+  config = serverConfig;
+  var server = createServer();
+  startServer(server);
+}
+
+exports.startDevServer = function(serverConfig, hostDir) {
+  app.use('/', express.static(hostDir));
+
+  exports.startServer(serverConfig);
+}
 
 
-app.set('port', process.env.VCAP_APP_PORT || 3000);
-app.use(compression());
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(bodyParser.json());
+function createServer() {
+  app.set('port', 3000);
+  app.use(compression());
+  app.use(bodyParser.urlencoded({ extended: false }));
+  app.use(bodyParser.json());
 
-app.use('/', express.static(path.join(__dirname, 'build')));
-//app.use('/hosted_images', express.static(path.join('/var', 'www', 'hosted-images')));
-//app.get('/', express.static(path.join(__dirname, 'build', 'index.html')));
-app.get("/api/teams", getTeamInfo);
-app.get("/api/spots", getRemainingSpots);
-app.get("/api/imgs/:year?", getImageNames);
+  //app.use('/hosted_images', express.static(path.join('/var', 'www', 'hosted-images')));
+  //app.get('/', express.static(path.join(__dirname, 'build', 'index.html')));
+  app.get("/api/teams", getTeamInfo);
+  app.get("/api/spots", getRemainingSpots);
+  app.get("/api/imgs/:year?", getImageNames);
 
-var server = http.createServer(app);
+  setUpErrorLogging();
+
+  return http.createServer(app);
+}
+
+
+function startServer(server) {
+  server.listen(app.get('port'), function(){
+    console.log('Express server listening on port ' + app.get('port'));
+    update();
+  });
+}
 
 /************************************** API End Points **************************************/
 
@@ -303,21 +336,19 @@ function update() {
   }
 }
 
-// Log errors before crash
-app.use(function(err, req, res, next) {
-  if(!err) return next();
-  console.log("Error: ".red + JSON.stringify(err));
-  console.log(err.stack);
-  if(!res.headersSent) {
-    res.json({error: err});
-  }
-});
 
-//Start server
-server.listen(app.get('port'), function(){
-  console.log('Express server listening on port ' + app.get('port'));
-  update();
-});
+
+function setUpErrorLogging() {
+  app.use(function(err, req, res, next) {
+    if(!err) return next();
+    console.log("Error: ".red + JSON.stringify(err));
+    console.log(err.stack);
+    if(!res.headersSent) {
+      res.json({error: err});
+    }
+  });
+}
+
 
 var updateInterval = setInterval(function() {
   update();
