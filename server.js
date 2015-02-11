@@ -33,6 +33,7 @@ exports.startServer = function(serverConfig) {
 
 exports.startDevServer = function(serverConfig, hostDir) {
   app.use('/', express.static(hostDir));
+  app.use('/hosted_images', express.static(serverConfig.imagesDir));
 
   exports.startServer(serverConfig);
 }
@@ -116,7 +117,7 @@ function getImageNames(req, res) {
 function getRemainingSpots(req, res) {
   var remainingSpots = 0;
   var request_url = "https://www.eventbriteapi.com/v3/events/" + 
-      config.eventbrite.event_id + "?token=" + config.eventbrite.oathtoken;
+      config.eventbrite.eventId + "?token=" + config.eventbrite.oathToken;
 
   if(new Date() > afterHackathon) {
     //after the hackathon, there are no spots
@@ -240,14 +241,14 @@ function filterTeams(teams) {
 /************************************** EVENTBRITE API Requests **************************************/
 var requestTeams = function(callback) {
   var request_url = "https://www.eventbriteapi.com/v3/events/" + 
-      config.eventbrite.event_id + "/teams/?token=" + config.eventbrite.oathtoken;
+      config.eventbrite.eventId + "/teams/?token=" + config.eventbrite.oathToken;
 
   make_request(request_url, callback);
 };
 
 var requestAttendees = function(callback) {
   var request_url = "https://www.eventbriteapi.com/v3/events/" + 
-      config.eventbrite.event_id + "/attendees/?token=" + config.eventbrite.oathtoken;
+      config.eventbrite.eventId + "/attendees/?token=" + config.eventbrite.oathToken;
 
   make_request(request_url, callback);
 };
