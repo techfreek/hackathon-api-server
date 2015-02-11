@@ -21,20 +21,12 @@ var path = require('path'),
  *      eventId: "string-with-id",
  *      oathToken: "super-not-so-secret-token"
  *    },
- *    imagesDir: "directory-where-the-hosted-images-are",
- *    devMode: {
- *      enabled: true, // Only enable for local development. Off for production
- *      buildDir: "build"
- *    }
+ *    imagesDir: "directory-where-the-hosted-images-are"
  * }
  */
 var config;
 exports.startServer = function(serverConfig) {
   config = serverConfig;
-  if (config.devMode.enabled) {
-    app.use('/', express.static(config.devMode.buildDir));
-    app.use('/hosted_images', express.static(config.imagesDir));
-  }
 
   var server = createServer();
   startServer(server);
