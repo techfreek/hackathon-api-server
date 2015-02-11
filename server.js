@@ -21,23 +21,24 @@ var path = require('path'),
  *      eventId: "string-with-id",
  *      oathToken: "super-not-so-secret-token"
  *    },
- *    imagesDir: "directory-where-the-hosted-images-are"
+ *    imagesDir: "directory-where-the-hosted-images-are",
+ *    devMode: {
+ *      enabled: true, // Only enable for local development. Off for production
+ *      buildDir: "build"
+ *    }
  * }
  */
 var config;
 exports.startServer = function(serverConfig) {
   config = serverConfig;
+  if (config.devMode.enabled) {
+    app.use('/', express.static(config.devMode.buildDir));
+    app.use('/hosted_images', express.static(config.imagesDir));
+  }
+
   var server = createServer();
   startServer(server);
 }
-
-exports.startDevServer = function(serverConfig, hostDir) {
-  app.use('/', express.static(hostDir));
-  app.use('/hosted_images', express.static(serverConfig.imagesDir));
-
-  exports.startServer(serverConfig);
-}
-
 
 function createServer() {
   app.set('port', 3000);
