@@ -30,7 +30,7 @@ exports.startServer = function(serverConfig) {
 
   var server = createServer();
   startServer(server);
-}
+};
 
 function createServer() {
   app.set('port', 3000);
