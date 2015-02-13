@@ -1,5 +1,6 @@
-# Configuration file with api keys
+## Configuration file with api keys
 config.json
+hosted-images/
 
-# Node stuff
-node_modules
+## npm stuff
+node_modules/
