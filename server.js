@@ -14,6 +14,7 @@ var path = require('path'),
     afterHackathon = new Date(2015, 2, 8),
     glob = require('glob');
 
+var config;
 /**
  * The server configuration should be in the format:
  * {
@@ -24,7 +25,6 @@ var path = require('path'),
  *    imagesDir: "directory-where-the-hosted-images-are"
  * }
  */
-var config;
 exports.startServer = function(serverConfig) {
   config = serverConfig;
 
@@ -38,8 +38,6 @@ function createServer() {
   app.use(bodyParser.urlencoded({ extended: false }));
   app.use(bodyParser.json());
 
-  //app.use('/hosted_images', express.static(path.join('/var', 'www', 'hosted-images')));
-  //app.get('/', express.static(path.join(__dirname, 'build', 'index.html')));
   app.get("/api/teams", getTeamInfo);
   app.get("/api/spots", getRemainingSpots);
   app.get("/api/imgs/:year?", getImageNames);
@@ -57,12 +55,12 @@ function startServer(server) {
   });
 }
 
-/************************************** API End Points **************************************/
+/********************************* API End Points *****************************/
 
 function getImageNames(req, res) {
   var year = req.query.year;
   var file_ext = req.query.ext; //default parameter is jpg
-  var img_path = path.join('/var', 'www', 'hosted-images');
+  var img_path = config.imagesDir;
   if(year) {
     img_path = path.join(img_path, year);
   }
@@ -79,7 +77,7 @@ function getImageNames(req, res) {
 
       var size = imgSize(names[i]);
       //update file path so it works from browser
-      var filepath = names[i].replace("/var/www/hosted-images", "hosted_images");
+      var filepath = names[i].replace(config.imagesDir, "hosted_images");
 
       //calculate minipath
       var filepath_mini = filepath.replace(year, year + '_mini');
@@ -141,7 +139,7 @@ function getTeamInfo(req, res) {
   }
 }
 
-/************************************** Team Processing Functions **************************************/
+/************************** Team Processing Functions *************************/
 
 //Happened more commonly in old versions. 
 function removeDuplicates(list) {
@@ -215,8 +213,6 @@ function removeHiddenTeams(teams, attendees) {
   }
 
   _teams = removeDuplicates(_teams); //ensure it is free of dups
-
-  return;
 }
 
 //removes small teams
@@ -231,7 +227,7 @@ function filterTeams(teams) {
   return filtered;
 }
 
-/************************************** EVENTBRITE API Requests **************************************/
+/************************* EVENTBRITE API Requests ****************************/
 var requestTeams = function(callback) {
   var request_url = "https://www.eventbriteapi.com/v3/events/" + 
       config.eventbrite.eventId + "/teams/?token=" + config.eventbrite.oathToken;
