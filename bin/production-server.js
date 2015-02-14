@@ -27,7 +27,7 @@ function createWorker() {
     });
   } else {
     // Run the HTTP server if running as a worker
-    var apiServer = require(__dirname + '/server.js');
+    var apiServer = require(__dirname + '/hackathon-api-server.js');
     var config = require(__dirname + '/../conf/config.json');
     var server = apiServer.startServer(config);
 

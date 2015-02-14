@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "description": "The api server for the WSU Hackathon",
-  "main": "server.js",
+  "main": "bin/hackathon-api-server.js",
   "author": "The WSU Hackathon Wizards",
   "license": "BSD",
   "homepage": "http://hackathon.eecs.wsu.edu",
