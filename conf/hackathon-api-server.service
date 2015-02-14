@@ -1,0 +1,12 @@
+[Unit]
+Description=Node api server for the hackathon site
+
+[Service]
+ExecStart=/usr/bin/node /opt/hackathon-api-server/bin/production-server.js
+Environment=NODE_ENV=production
+Restart=always
+StandardOutput=syslog
+SyslogIdentifier=hackathon-api-server
+
+[Install]
+WantedBy=multi-user.target
