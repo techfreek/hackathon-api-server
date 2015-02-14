@@ -30,6 +30,7 @@ exports.startServer = function(serverConfig) {
 
   var server = createServer();
   startServer(server);
+  return server;
 };
 
 function createServer() {
