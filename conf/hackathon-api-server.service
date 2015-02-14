@@ -2,9 +2,11 @@
 Description=Node api server for the hackathon site
 
 [Service]
+ExecReload=/bin/kill -HUP $MAINPID
 ExecStart=/usr/bin/node /opt/hackathon-api-server/bin/production-server.js
 Environment=NODE_ENV=production
 Restart=always
+StandardError=syslog
 StandardOutput=syslog
 SyslogIdentifier=hackathon-api-server
 
