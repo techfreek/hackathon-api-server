@@ -9,6 +9,7 @@ var path = require('path'),
     request = require('request'),
     async = require('async'),
     _teams = [],
+    max_images = 50,
     approvedTeams = [],
     fs = require('fs'),
     afterHackathon = new Date(2015, 2, 8),
@@ -27,6 +28,8 @@ var config;
  */
 exports.startServer = function(serverConfig) {
   config = serverConfig;
+
+  console.log("Server config: " + JSON.stringify(config));
 
   var server = createServer();
   startServer(server);
@@ -59,9 +62,17 @@ function startServer(server) {
 /********************************* API End Points *****************************/
 
 function getImageNames(req, res) {
+  console.log("IMG Query: " + JSON.stringify(req.query));
+
   var year = req.query.year;
   var file_ext = req.query.ext; //default parameter is jpg
   var img_path = config.imagesDir;
+  var skip = req.query.skip;
+
+  if(!skip) {
+    skip = 0;
+  }
+
   if(year) {
     img_path = path.join(img_path, year);
   }
@@ -73,25 +84,18 @@ function getImageNames(req, res) {
   img_path = path.join(img_path, "**", "*." + file_ext); //for globbing
   console.log("Path: " + img_path);
   glob(img_path, function(err, names) {
-    var imgs = [];
-    for(var i = 0; i < names.length; i++) {
 
-      var size = imgSize(names[i]);
+    var chunk = names.slice(skip, skip+max_images);
+
+    var imgs = [];
+    for(var i = 0; i < chunk.length; i++) {
+
+      var size = imgSize(chunk[i]);
       //update file path so it works from browser
-      var filepath = names[i].replace(config.imagesDir, "hosted_images");
+      var filepath = chunk[i].replace(config.imagesDir, "hosted_images");
 
       //calculate minipath
       var filepath_mini = filepath.replace(year, year + '_mini');
-      
-      /*
-        //make filepath_mini;
-        var filepath_components = filepath.split('/'); 
-        // ^^ Produced [hosted_images, hackathon_0#, (filename).jpg]
-        filepath_components[1] += '_mini';
-
-        //reassemble path
-        var filepath_mini = filepath_components.join([separator = '/']);
-      */
 
       var img = {
         link: filepath,
@@ -102,7 +106,8 @@ function getImageNames(req, res) {
       imgs.push(img);
 
     }
-    res.send(imgs);
+    res.send({imgs: imgs,
+              moreImages: (names.length > skip+max_images) ? true : false});
   });
 }
 
