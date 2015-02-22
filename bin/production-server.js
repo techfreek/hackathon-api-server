@@ -8,8 +8,17 @@
 require('daemon')();
 
 var cluster = require('cluster');
+var fs = require('fs');
+var process = require('process');
 
 var numCpus = require('os').cpus().length;
+
+var pidLocation = '/var/run/hackathon-api-server.pid';
+fs.writeFile(pidLocation, process.pid, function(err) {
+  if (err) {
+    console.log("Errors don't happen! But...\n" + err);
+  }
+});
 
 /**
  * Creates a new child worker if this is the master process, otherwise it
@@ -86,6 +95,11 @@ process.on('SIGHUP', function() {
  */
 process.on('SIGTERM', function() {
   killAllWorkers('SIGTERM');
+  fs.unlink(pidLocation, function(err) {
+    if (err) {
+      console.log("Errors don't happen! But...\n" + err);
+    }
+  });
 });
 
 createWorkers(numCpus * 2);
