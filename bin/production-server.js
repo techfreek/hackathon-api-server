@@ -15,6 +15,8 @@ var root = process.getgid() === 0;
 
 if (cluster.isMaster) {
   daemon();
+
+  log.info('Starting')
   createWorkers();
   if (root) {
     var pidLocation = '/var/run/hackathon-api-server.pid';
@@ -24,36 +26,12 @@ if (cluster.isMaster) {
       }
     });
   }
+
+  process.on('SIGHUP', sighup);
+  process.on('SIGTERM', sigterm);
 } else {
   runWorker();
 }
-
-
-/**
- * Restart the child processes
- */
-process.on('SIGHUP', function() {
-  log.info('SIGHUP received...restarting workers');
-  killAllWorkers('SIGTERM');
-  createWorkers();
-});
-
-
-/**
- * Nicely terminate the child processes
- */
-process.on('SIGTERM', function() {
-  log.info('SIGTERM received...shutting down');
-  killAllWorkers('SIGTERM');
-
-  if (root) {
-    fs.unlink(pidLocation, function(err) {
-      if (err) {
-        log.error(err);
-      }
-    });
-  }
-});
 
 
 /**
@@ -102,7 +80,6 @@ function killAllWorkers(signal) {
 
 
 function runWorker() {
-  log.info('new worker running');
   // Run the HTTP server if running as a worker
   var apiServer = require('../lib/api-server.js');
   var config = require('../conf/config.json');
@@ -120,5 +97,32 @@ function runWorker() {
   if (root) {
     process.setgid('hackathon-api-server');
     process.setuid('hackathon-api-server');
+  }
+}
+
+
+/**
+ * Restart the child processes
+ */
+function sighup() {
+  log.info('SIGHUP received...restarting workers');
+  killAllWorkers('SIGTERM');
+  createWorkers();
+}
+
+
+/**
+ * Nicely terminate the child processes
+ */
+function sigterm() {
+  log.info('SIGTERM received...shutting down');
+  killAllWorkers('SIGTERM');
+
+  if (root) {
+    fs.unlink(pidLocation, function(err) {
+      if (err) {
+        log.error(err);
+      }
+    });
   }
 }
