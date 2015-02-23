@@ -1,6 +1,7 @@
 ## Configuration file with api keys
 config.json
 hosted-images/
+logfile
 
 ## npm stuff
 node_modules/

@@ -5,66 +5,84 @@
  * https://www.digitalocean.com/community/tutorials/how-to-write-a-linux-daemon-with-node-js-on-a-vps
  */
 
-require('daemon')();
-
 var cluster = require('cluster');
+var daemon = require('daemon');
 var fs = require('fs');
-var process = require('process');
 
-var numCpus = require('os').cpus().length;
+var log = require('../lib/logging.js');
 
-var pidLocation = '/var/run/hackathon-api-server.pid';
-fs.writeFile(pidLocation, process.pid, function(err) {
-  if (err) {
-    console.log("Errors don't happen! But...\n" + err);
+var root = process.getgid() === 0;
+
+if (cluster.isMaster) {
+  daemon();
+  createWorkers();
+  if (root) {
+    var pidLocation = '/var/run/hackathon-api-server.pid';
+    fs.writeFile(pidLocation, process.pid, function(err) {
+      if (err) {
+        log.error(err);
+      }
+    });
+  }
+} else {
+  runWorker();
+}
+
+
+/**
+ * Restart the child processes
+ */
+process.on('SIGHUP', function() {
+  log.info('SIGHUP received...restarting workers');
+  killAllWorkers('SIGTERM');
+  createWorkers();
+});
+
+
+/**
+ * Nicely terminate the child processes
+ */
+process.on('SIGTERM', function() {
+  log.info('SIGTERM received...shutting down');
+  killAllWorkers('SIGTERM');
+
+  if (root) {
+    fs.unlink(pidLocation, function(err) {
+      if (err) {
+        log.error(err);
+      }
+    });
   }
 });
+
 
 /**
  * Creates a new child worker if this is the master process, otherwise it
  * starts the api server.
  */
 function createWorker() {
-  if (cluster.isMaster) {
-    // "fok a child" if running as cluster master
-    var child = cluster.fork();
+  // "fok a child" if running as cluster master
+  var child = cluster.fork();
 
-    // Respawn the child process after exit
-    // This is for any potentially uncaught exceptions
-    child.on('exit', function (code, singal) {
-      createWorker();
-    });
-  } else {
-    // Run the HTTP server if running as a worker
-    var apiServer = require(__dirname + '/hackathon-api-server.js');
-    var config = require(__dirname + '/../conf/config.json');
-    var server = apiServer.startServer(config);
-
-    // Listen for terminate signals
-    process.on('SIGTERM', function() {
-      server.close(function() {
-        // Disconnect from cluster master
-        process.disconnect && process.disconnect();
-      })
-    });
-
-    // Check if root. If so drop the permissions down.
-    if (process.getgid() === 0) {
-      process.setgid('hackathon-api-server');
-      process.setuid('hackathon-api-server');
-    }
-  }
+  // Respawn the child process after exit
+  // This is for any potentially uncaught exceptions
+  child.on('exit', function (code, singal) {
+    createWorker();
+  });
 }
+
 
 /**
  * Creates the specified number of workers.
  * @param n The number of workers to create.
  */
-function createWorkers(n) {
+function createWorkers() {
+  var n = require('os').cpus().length * 2;
   while (n-- > 0) {
     createWorker();
   }
 }
+
 
 /**
  * Kills all the child workers with the given signal
@@ -82,24 +100,25 @@ function killAllWorkers(signal) {
   }
 }
 
-/**
- * Restart the child processes
- */
-process.on('SIGHUP', function() {
-  killAllWorkers('SIGTERM');
-  createWorkers(numCpus * 2);
-});
 
-/**
- * Nicely terminate the child processes
- */
-process.on('SIGTERM', function() {
-  killAllWorkers('SIGTERM');
-  fs.unlink(pidLocation, function(err) {
-    if (err) {
-      console.log("Errors don't happen! But...\n" + err);
-    }
+function runWorker() {
+  log.info('new worker running');
+  // Run the HTTP server if running as a worker
+  var apiServer = require('../lib/api-server.js');
+  var config = require('../conf/config.json');
+  var server = apiServer.startServer(config);
+
+  // Listen for terminate signals
+  process.on('SIGTERM', function() {
+    server.close(function() {
+      // Disconnect from cluster master
+      process.disconnect && process.disconnect();
+    })
   });
-});
 
-createWorkers(numCpus * 2);
+  // Check if root. If so drop the permissions down.
+  if (root) {
+    process.setgid('hackathon-api-server');
+    process.setuid('hackathon-api-server');
+  }
+}
